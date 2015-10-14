@@ -1,6 +1,3 @@
-Title
+Dex
 ==========================
-Sub Title
---------------------------
-styleguide
-https://google-styleguide.googlecode.com/svn/trunk/pyguide.html
+A simple tool to control Google Chrome Web browser using hand gestures

@@ -1,5 +1,6 @@
 #!/usr/bin/python
 import cv2
+import hand_detector as hd
 import numpy as np
 from PIL import Image
 
@@ -7,7 +8,6 @@ from PIL import Image
 # No-op function
 def nothing(x):
     pass
-
 
 # Creates windows.
 def createWindows():
@@ -84,20 +84,13 @@ def noiseReduction(frame):
 def smoothen(img):
     check1 = cv2.getTrackbarPos('medianValue1', 'Output')
     check2 = cv2.getTrackbarPos('medianValue2', 'Output')
-    if check1 % 2 == 1 and check2 % 2 == 1:
-        value1 = check1
-        value2 = check2
-    elif check1 % 2 == 1:
-        value1 = check1
-        value2 = check2 + 1
-    elif check2 % 2 == 1:
-        value1 = check1 + 1
-        value2 = check2
-    else:
-        value1 = check1 + 1
-        value2 = check2 + 1
+    if check1 % 2 == 0:
+        check1 = check1 + 1
+    if check2 % 2 == 0:
+        check2 = check2 + 1
 
-    median = cv2.GaussianBlur(img, (value1, value2), 0)
+    median = cv2.GaussianBlur(img, (check1, check2), 0)
+    ret,median = cv2.threshold(median,0,255,cv2.THRESH_OTSU)
     return median
 
 
@@ -112,45 +105,23 @@ def main():
         ret, frame = cap.read()
         frame2 = frame.copy()
 
+'''
         # Get a nice and clean YCC image to work on
         imgYCC = tranformToYCC(frame2)
         imgYCC = noiseReduction(imgYCC)
         imgYCC = smoothen(imgYCC)
+'''
 
-        # Marking contours
-        newimg = imgYCC.copy()
-        contours, hierarchy = cv2.findContours(newimg,cv2.RETR_TREE,
-                                    cv2.CHAIN_APPROX_SIMPLE)
+        
 
-        index, maxArea = 0, 0
+        fingertips, center, rad = hd.detectHand(imgYCC.copy())
 
-        for i in xrange(len(contours)):
-            area = cv2.contourArea(contours[i])
-            if area > maxArea:
-                maxArea = area
-                index = i
-            realHandContour = contours[index]
-            realHandLen = cv2.arcLength(realHandContour, True)
-            handContour = cv2.approxPolyDP(realHandContour,
-                                    0.001 * realHandLen, True)
+        cv2.circle(frame2, tuple(center), 5, [0, 0, 0], 2)
+        cv2.circle(frame2, tuple(center), int(rad), [50, 1, 164], 2)
 
-        cv2.drawContours(frame2, handContour, -1, (0, 0, 255), -1)
-        minX, minY, handWidth, handHeight = cv2.boundingRect(handContour)
-        cv2.rectangle(frame2, (minX, minY), (minX + handWidth,
-                        minY + handHeight), (0, 255, 0), 2)
-
-        cnt = handContour
-        hull = cv2.convexHull(cnt, returnPoints = False)
-        defects = cv2.convexityDefects(cnt, hull)
-        for i in range(defects.shape[0]):
-            s, e, f, d = defects[i, 0]
-            start = tuple(cnt[s][0])
-            end = tuple(cnt[e][0])
-            far = tuple(cnt[f][0])
-            cv2.line(frame2, start, end, [255, 0, 0], 2)
-            cv2.circle(frame2, far, 5, [255, 0, 0], -1)
-
-        cv2.drawContours(frame2, handContour, -1, (0, 0, 255), 2)
+        for tip in fingertips:
+            cv2.circle(frame2, tuple(tip), 4, [18, 123, 251], 2)
+            cv2.line(frame2, tuple(tip), tuple(center), [245, 157, 100], 2)
 
 
         if frame.any():

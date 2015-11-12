@@ -20,20 +20,20 @@ def createWindows():
 # Attaches trackbars where required
 def addTrackbars():
     #for YCrCb
-    cv2.createTrackbar('Ymin', 'YCCCapture', 45, 255, nothing)
-    cv2.createTrackbar('Ymax', 'YCCCapture', 96, 255, nothing)
-    cv2.createTrackbar('minCr', 'YCCCapture', 115, 255, nothing)
-    cv2.createTrackbar('minCb', 'YCCCapture', 110, 255, nothing)
-    cv2.createTrackbar('maxCr', 'YCCCapture', 161, 255, nothing)
-    cv2.createTrackbar('maxCb', 'YCCCapture', 154, 255, nothing)
+    cv2.createTrackbar('Ymin', 'YCCCapture', 99, 255, nothing)
+    cv2.createTrackbar('Ymax', 'YCCCapture', 215, 255, nothing)
+    cv2.createTrackbar('minCr', 'YCCCapture', 135, 255, nothing)
+    cv2.createTrackbar('minCb', 'YCCCapture', 120, 255, nothing)
+    cv2.createTrackbar('maxCr', 'YCCCapture', 153, 255, nothing)
+    cv2.createTrackbar('maxCb', 'YCCCapture', 129, 255, nothing)
 
     #for denoising
-    cv2.createTrackbar('medianValue1', 'Output', 1, 31, nothing)
-    cv2.createTrackbar('medianValue2', 'Output', 1, 31, nothing)
+    cv2.createTrackbar('medianValue1', 'Output', 5, 31, nothing)
+    cv2.createTrackbar('medianValue2', 'Output', 5, 31, nothing)
 
     #for kernel
-    cv2.createTrackbar('size1', 'Output', 5, 300, nothing)
-    cv2.createTrackbar('size2', 'Output', 5, 300, nothing)
+    cv2.createTrackbar('size1', 'Output', 10, 300, nothing)
+    cv2.createTrackbar('size2', 'Output', 10, 300, nothing)
 
 
 # Get configuration values from trackbars for YCC
@@ -105,16 +105,16 @@ def main():
         ret, frame = cap.read()
         frame2 = frame.copy()
 
-'''
         # Get a nice and clean YCC image to work on
+        # TODO: BG subtraction
         imgYCC = tranformToYCC(frame2)
         imgYCC = noiseReduction(imgYCC)
         imgYCC = smoothen(imgYCC)
-'''
-
-        
 
         fingertips, center, rad = hd.detectHand(imgYCC.copy())
+
+        if fingertips is None and center is None:
+            continue
 
         cv2.circle(frame2, tuple(center), 5, [0, 0, 0], 2)
         cv2.circle(frame2, tuple(center), int(rad), [50, 1, 164], 2)

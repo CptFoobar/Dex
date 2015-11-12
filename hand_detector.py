@@ -1,6 +1,5 @@
 #!/usr/bin/python
 import cv2
-import hand_extractor as he
 import matplotlib.pyplot as plt, math
 import numpy as np
 from cv2 import cv
@@ -10,15 +9,7 @@ from scipy.spatial.qhull import QhullError
 
 # Detects the hand from the frame. Returns coordinates of
 # centroid of the hand, the finger tips and the radius of the palm circle
-def detectHand(frame):
-    ignoreWarnings()
-
-    # Get contours of the hand
-    handContour = he.getHandContours(frame)
-    if handContour is None:
-        return None, None, None
-    cnt = handContour
-
+def detectHand(cnt):
     try:
         # FFT: Maybe we should take hand height wrt to centroid and farthest tip
         # and change logic accordingly for better and more accurate results
@@ -50,17 +41,21 @@ def detectHand(frame):
                 palmR = d
 
         fingers = []
+        # 1.6.. the magic factor
+        magicR = maxD * 1.6
 
-        # Filter handPolygon to find most relevant
         for i in range(len(handPolygon)):
-            d = dist(handPolygon[i], centroid)/handHeight
-            x = dist(handPolygon[i], handPolygon[(i+1)%len(handPolygon)])
-            if d > 0.4 and d < 0.65 and x > 30:
+            x = (dist(handPolygon[i], handPolygon[(i+1)%len(handPolygon)]) > 30)
+            if isFinger(handPolygon[i], centroid, handHeight, magicR) and x:
                 fingers.append(handPolygon[i])
 
-        return np.asarray(fingers), centroid, palmR
-    except (cv2.error, QhullError, TypeError):
-        return None, None, None
+        if len(fingers) < 0 or len(fingers) > 5:
+            raise ValueError
+
+        return np.asarray(fingers), centroid, palmR, (handHeight, handWidth)
+
+    except (cv2.error, QhullError, TypeError, ValueError):
+        return None, None, None, None
 
 # Calculates distance between two points
 def dist(point, center):
@@ -106,6 +101,13 @@ def handKeyPoints(cnt):
     except TypeError:
         raise TypeError
 
+def isFinger(f, c, hh, magicR):
+    v = vertdist(f, c)/hh
+    h = hordist(f, c)/hh
+    if ((v >= 0.45 and v <= 0.75) or (h >= 0.4 and h <=0.65)) and dist(f, c) >= magicR:
+        return True
+    return False
+
 # Returns the minimum distance of a point from all edges of the given polygon
 def maxDistance(poly, point):
     lmin = 99999
@@ -119,5 +121,9 @@ def maxDistance(poly, point):
             lmin = d
     return lmin
 
-def ignoreWarnings():
-    np.seterr(invalid='ignore')
+def hordist(point, ref):
+    return math.fabs(point[0] - ref[0])
+
+
+def vertdist(point, ref):
+    return math.fabs(point[1] - ref[1])

@@ -3,7 +3,7 @@ import cv2
 
 # Returns contours of the hand
 def getHandContours(frame):
-    contours, hierarchy = cv2.findContours(frame, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    contours, hierarchy = cv2.findContours(frame.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     index, maxArea = 0, 0
 

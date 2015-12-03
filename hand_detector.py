@@ -3,7 +3,6 @@ import cv2
 import matplotlib.pyplot as plt, math
 import numpy as np
 from cv2 import cv
-from PIL import Image
 from scipy.spatial import Voronoi, voronoi_plot_2d
 from scipy.spatial.qhull import QhullError
 
@@ -18,8 +17,12 @@ def detectHand(cnt):
         # Find key points of the hand
         defectPoints, handPolygon = handKeyPoints(cnt)
 
-        # Caculate centroid
-        vor = Voronoi(handPolygon)
+        # Calculate centroid
+        try:
+            vor = Voronoi(handPolygon)
+        except Exception, e:
+            print 'This is an exception+++++++++++++++++++++++++++++++++++++++++++++++++++'
+            return None,None,None,None
         maxD = 0
         centroid = vor.vertices[0]
         for node in vor.vertices:

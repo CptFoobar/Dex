@@ -88,7 +88,7 @@ def subtractBackground(frame,backgrounds,fromRanges = False):
     frameTemp = frameTemp.ravel()
     return frameB,frameG,frameR
 
-def BackgroundSubtractorSuperMOG():
+def BackgroundSubtractorSuperMOG(cap):
 
     cv2.namedWindow('M',cv2.WINDOW_NORMAL)
     cv2.namedWindow('G',cv2.WINDOW_NORMAL)
@@ -96,7 +96,7 @@ def BackgroundSubtractorSuperMOG():
     cv2.createTrackbar('diffB','M',1,256,nothing)
     cv2.createTrackbar('diffG','M',1,256,nothing)
     cv2.createTrackbar('diffR','M',1,256,nothing)
-    cap = cv2.VideoCapture(0)
+    #cap = cv2.VideoCapture(0)
     backgrounds = []
     count = 0
     while cap.isOpened():
@@ -134,10 +134,10 @@ def BackgroundSubtractorSuperMOG():
 
         k = cv2.waitKey(10)
         if k == 27:
-            print "Type any letter from these to chose a window(G/R/M)"
+            print "Type any letter from these to choose a window(G/R/M)"
             choice = raw_input('')
-            cap.release()
-            del(cap)
+            #cap.release()
+            #del(cap)
             cv2.destroyAllWindows()
             break
     return backgrounds,choice

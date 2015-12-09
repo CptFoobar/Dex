@@ -16,46 +16,31 @@ def detectHand(cnt):
 
         # Find key points of the hand
         defectPoints, handPolygon = handKeyPoints(cnt)
+        #print "handPolygon: " + str(handPolygon)
 
         # Calculate centroid
-        try:
-            vor = Voronoi(handPolygon)
-        except Exception, e:
-            print 'This is an exception+++++++++++++++++++++++++++++++++++++++++++++++++++'
-            return None,None,None,None
-        maxD = 0
-        centroid = vor.vertices[0]
-        for node in vor.vertices:
-            if cv2.pointPolygonTest(defectPoints, tuple(node), False) > 0:
-                mx = maxDistance(defectPoints, node)
-                if mx > maxD:
-                    maxD = mx
-                    centroid = node
+        centroid = (minX + handWidth*0.5, minY + handHeight*0.67)
+
 
         # Round off centroid to the nearest pixel
         centroid = np.around(centroid, decimals=1)
         centroid = centroid.astype(int)
 
         # Calculate radius of palm circle
-        palmR = 99999
-        for defect in defectPoints:
-            d = dist(defect, centroid)
-            if d < maxD:
-                palmR = d
-
+        palmR = max(handWidth, handWidth)*0.35
         fingers = []
         # 1.6.. the magic factor
-        magicR = maxD * 1.6
+        magicR = palmR * 1.25
 
         for i in range(len(handPolygon)):
-            x = (dist(handPolygon[i], handPolygon[(i+1)%len(handPolygon)]) > 30)
+            x = dist(handPolygon[i], handPolygon[(i+1)%len(handPolygon)]) > 40
             if isFinger(handPolygon[i], centroid, handHeight, magicR) and x:
                 fingers.append(handPolygon[i])
 
         if len(fingers) < 0 or len(fingers) > 5:
             raise ValueError
 
-        return np.asarray(fingers), centroid, palmR, (handHeight, handWidth)
+        return np.asarray(fingers), (int(handWidth*0.5), int(handHeight*0.67)), palmR, (handHeight, handWidth, minX, minY)
 
     except (cv2.error, QhullError, TypeError, ValueError):
         return None, None, None, None

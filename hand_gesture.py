@@ -46,15 +46,16 @@ def createWindows():
     # not have a window interface except for settings panel
     cv2.namedWindow('YCCCapture', cv2.WINDOW_NORMAL)
     cv2.namedWindow('Output', cv2.WINDOW_NORMAL)
+    cv2.namedWindow('frame3', cv2.WINDOW_NORMAL)
 
 
 # Attaches trackbars where required
 def addTrackbars():
     #for YCrCb
-    cv2.createTrackbar('Ymin', 'YCCCapture', 99, 255, nothing)
-    cv2.createTrackbar('Ymax', 'YCCCapture', 215, 255, nothing)
-    cv2.createTrackbar('minCr', 'YCCCapture', 135, 255, nothing)
-    cv2.createTrackbar('minCb', 'YCCCapture', 120, 255, nothing)
+    cv2.createTrackbar('Ymin', 'YCCCapture', 59, 255, nothing)
+    cv2.createTrackbar('Ymax', 'YCCCapture', 147, 255, nothing)
+    cv2.createTrackbar('minCr', 'YCCCapture', 131, 255, nothing)
+    cv2.createTrackbar('minCb', 'YCCCapture', 121, 255, nothing)
     cv2.createTrackbar('maxCr', 'YCCCapture', 153, 255, nothing)
     cv2.createTrackbar('maxCb', 'YCCCapture', 129, 255, nothing)
 
@@ -78,24 +79,26 @@ def main():
 
     #List Count Detected Gesture
     count = [0 for i in range(10)]
-
+    cap = cv2.VideoCapture(0)
     ans = raw_input('Do u have a plain background or not(y/n)? ')
     if ans == 'y':
         fgbg = cv2.BackgroundSubtractorMOG2(history=1,varThreshold=50,bShadowDetection=True)
     else:
         ##custom made background subtraction
-        bgs,ch = BackgroundSubtractorSuperMOG()
+        bgs,ch = BackgroundSubtractorSuperMOG(cap)
 
     # Initialize windows and trackbars
     createWindows()
     addTrackbars()
 
     adjustImageFlag = True
-    cap = cv2.VideoCapture(0)
+
     while cap.isOpened():
         ret, frame = cap.read()
+        if not ret:
+            continue
         frame2 = frame.copy()
-
+        frame3 = frame.copy()
         # Get a nice and clean YCC image to work on
         # TODO: BG subtraction
         #####background subtraction starts#####
@@ -114,7 +117,8 @@ def main():
 
         if not adjustImageFlag:
             # Get contours of the hand
-            handContour = getHandContours(imgYCC)
+            handContour = getHandContours(imgYCC.copy())
+            cv2.drawContours(frame2, handContour, -1, (0,255,0), 3)
             if handContour is None:
                 print "No hand contour exception +++++++++++++++++++++++++++++++++++++++++++++++++++"
                 continue
@@ -124,20 +128,24 @@ def main():
 
 
             fingertips, center, rad, handDimens = detectHand(handContour)
-
             if fingertips is None or center is None:
                 continue
+            x = handDimens[2]
+            y = handDimens[3]
+            w = handDimens[1]
+            h = handDimens[0]
+            frame3 = frame2[y:y+h, x:x+w]
 
-            cv2.circle(frame2, tuple(center), 5, [0, 0, 0], 2)
-            cv2.circle(frame2, tuple(center), int(rad), [50, 1, 164], 2)
+            cv2.circle(frame3, tuple(center), 5, [0, 0, 0], 2)
+            cv2.circle(frame3, tuple(center), int(rad), [50, 1, 164], 2)
 
             for tip in fingertips:
-                cv2.circle(frame2, tuple(tip), 4, [18, 123, 251], 2)
-                cv2.line(frame2, tuple(tip), tuple(center), [245, 157, 100], 2)
+                cv2.circle(frame3, tuple((tip[0]-x, tip[1]-y)), 4, [18, 123, 251], 2)
+                cv2.line(frame3, tuple((tip[0]-x, tip[1]-y)), tuple(center), [245, 157, 100], 2)
 
 
             ######message to send to server#########
-            detected_gesture = detectGesture(fingertips, center, handDimens)
+            detected_gesture = detectGesture(fingertips, center, (handDimens[0], handDimens[1]))
             if detected_gesture == "open-hand":
                 count[0] += 1
             elif detected_gesture == "closed-hand":
@@ -179,7 +187,7 @@ def main():
         if frame.any():
             cv2.imshow('YCCCapture',imgYCC)
             cv2.imshow('Output',frame2)
-
+            cv2.imshow('frame3', frame3)
 
         k = cv2.waitKey(10)
         if k == 27 or k == ord('q'):
